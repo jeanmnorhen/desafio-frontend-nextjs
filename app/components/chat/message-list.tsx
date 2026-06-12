@@ -13,13 +13,14 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useSound } from "@/app/hooks/use-sound";
 
 interface MessageListProps {
+  conversationId: string | null;
   messages: Message[] | undefined;
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
 }
 
-export function MessageList({ messages, isLoading, isError, onRetry }: MessageListProps) {
+export function MessageList({ conversationId, messages, isLoading, isError, onRetry }: MessageListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const prevMessagesLength = useRef(messages?.length || 0);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
@@ -49,6 +50,13 @@ export function MessageList({ messages, isLoading, isError, onRetry }: MessageLi
       setIsAutoScrolling(true);
     }
   };
+
+  // Rola para a última mensagem (fim da conversa) ao carregar ou mudar de conversa
+  useEffect(() => {
+    if (!isLoading && messages && messages.length > 0) {
+      setTimeout(scrollToBottom, 50); // delay sutil para renderização do virtualizer estabilizar
+    }
+  }, [conversationId, isLoading]);
 
   // Se tem nova mensagem
   useEffect(() => {

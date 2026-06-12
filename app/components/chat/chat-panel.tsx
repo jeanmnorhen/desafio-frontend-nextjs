@@ -49,6 +49,7 @@ export function ChatPanel({ conversationId, onBack }: ChatPanelProps) {
       
       <div className="relative flex flex-1 flex-col overflow-hidden">
         <MessageList 
+          conversationId={conversationId}
           messages={messages} 
           isLoading={isLoading} 
           isError={isError} 

@@ -35,10 +35,16 @@ export function MessageList({ messages, isLoading, isError, onRetry }: MessageLi
     setIsAutoScrolling(!isScrolledUp);
   };
 
-  // Rolar para baixo forçado (botão ou carregamento inicial)
+  // Rolar para baixo forçado
   const scrollToBottom = () => {
     if (parentRef.current) {
-      parentRef.current.scrollTop = parentRef.current.scrollHeight;
+      // Quando usamos react-virtual, o scrollHeight reflete o tamanho total estimado.
+      // requestAnimationFrame garante que o DOM atualizou o totalSize antes de rolar.
+      requestAnimationFrame(() => {
+        if (parentRef.current) {
+          parentRef.current.scrollTop = parentRef.current.scrollHeight;
+        }
+      });
       setShowScrollBottom(false);
       setIsAutoScrolling(true);
     }
@@ -57,7 +63,7 @@ export function MessageList({ messages, isLoading, isError, onRetry }: MessageLi
       }
 
       if (isAutoScrolling) {
-        scrollToBottom();
+        setTimeout(scrollToBottom, 50); // delay sutil para o virtualizer calcular o offset da nova msg
       }
     }
     prevMessagesLength.current = currentLength;
@@ -103,7 +109,7 @@ export function MessageList({ messages, isLoading, isError, onRetry }: MessageLi
   }
 
   return (
-    <div className="relative flex-1 bg-bg-chat">
+    <div className="relative flex-1 flex flex-col min-h-0 bg-bg-chat">
       {/* Background sutil tipo WhatsApp */}
       <div className="pointer-events-none absolute inset-0 z-0 bg-chat-pattern opacity-5" />
 

@@ -25,6 +25,26 @@ export function Providers({ children }: { children: React.ReactNode }) {
     queryClient.setMutationDefaults(["sendMessage"], {
       mutationFn: ({ conversationId, text }: { conversationId: string; text: string }) =>
         sendMessage(conversationId, text),
+      onSuccess: (newMessage, variables) => {
+        // Atualiza o cache diretamente para evitar race conditions com refetch.
+        if (variables) {
+          const queryKey = ["conversations", variables.conversationId, "messages"];
+          queryClient.setQueryData<any[]>(queryKey, (old) => {
+            if (!old) return [newMessage];
+            // Substitui a mensagem temporária pela real ou apenas adiciona
+            return old.map(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body ? newMessage : msg);
+          });
+        }
+      },
+      onSettled: (data, error, variables) => {
+        // Quando a mutação for concluída (com sucesso ou erro), invalidamos
+        // as queries para que a UI busque o estado real do servidor.
+        // Usamos variables em vez de context porque context é perdido no reload offline.
+        if (variables) {
+          queryClient.invalidateQueries({ queryKey: ["conversations", variables.conversationId, "messages"] });
+          queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        }
+      }
     });
 
     return queryClient;

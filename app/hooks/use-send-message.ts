@@ -54,22 +54,27 @@ export function useSendMessage() {
       return { previousMessages, tempId, queryKey, convsKey };
     },
 
-    // If the mutation fails, use the context we returned above
+    // If the mutation fails, we need to revert.
+    // Notice we use variables to construct the queryKey in case context is lost (after reload)
     onError: (err, newTodo, context) => {
+      const queryKey = ["conversations", newTodo.conversationId, "messages"];
       if (context?.previousMessages) {
-        queryClient.setQueryData(context.queryKey, context.previousMessages);
+        queryClient.setQueryData(queryKey, context.previousMessages);
       }
-      // Note: We'd ideally revert the conversation list too, but it will be refetched soon anyway
+    },
+
+    onSuccess: (newMessage, variables) => {
+      const queryKey = ["conversations", variables.conversationId, "messages"];
+      queryClient.setQueryData<Message[]>(queryKey, (old) => {
+        if (!old) return [newMessage];
+        return old.map(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body ? newMessage : msg);
+      });
     },
 
     // Always refetch after error or success to ensure server sync
-    onSettled: (data, error, variables, context) => {
-      if (context?.queryKey) {
-        queryClient.invalidateQueries({ queryKey: context.queryKey });
-      }
-      if (context?.convsKey) {
-        queryClient.invalidateQueries({ queryKey: context.convsKey });
-      }
+    onSettled: (data, error, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["conversations", variables.conversationId, "messages"] });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
 }

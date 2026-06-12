@@ -6,8 +6,9 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Inbox de Atendimento — Desafio Frontend",
-  description: "Painel de atendimento WhatsApp construído com Next.js App Router.",
+  title: "Inbox Atendimento",
+  description: "Desafio técnico Frontend - Inbox de atendimento estilo WhatsApp",
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {

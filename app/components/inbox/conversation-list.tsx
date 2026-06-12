@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { MessageSquareOff } from "lucide-react";
 import { useConversations } from "@/app/hooks/use-conversations";
 import { ConversationSearch } from "./conversation-search";
@@ -18,16 +18,44 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
   const [search, setSearch] = useState("");
   const { data: conversations, isLoading, isError, refetch } = useConversations();
 
+  // Filtrar conversas por nome ou telefone
+  const filteredConversations = useMemo(() => {
+    return conversations?.filter(
+      (c) =>
+        c.contactName.toLowerCase().includes(search.toLowerCase()) ||
+        c.contactPhone.includes(search)
+    ) ?? [];
+  }, [conversations, search]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignorar se estiver digitando no input de busca ou mensagem
+      if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)) return;
+
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (filteredConversations.length === 0) return;
+        
+        const currentIndex = filteredConversations.findIndex(c => c.id === selectedId);
+        
+        let nextIndex;
+        if (e.key === "ArrowDown") {
+          nextIndex = currentIndex < filteredConversations.length - 1 ? currentIndex + 1 : 0;
+        } else {
+          nextIndex = currentIndex > 0 ? currentIndex - 1 : filteredConversations.length - 1;
+        }
+        
+        onSelect(filteredConversations[nextIndex].id);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedId, filteredConversations, onSelect]);
+
   if (isError) {
     return <ErrorState onRetry={() => refetch()} />;
   }
-
-  // Filtrar conversas por nome ou telefone
-  const filteredConversations = conversations?.filter(
-    (c) =>
-      c.contactName.toLowerCase().includes(search.toLowerCase()) ||
-      c.contactPhone.includes(search)
-  ) ?? [];
 
   // Ordenar por data da última mensagem (descendente)
   const sortedConversations = [...filteredConversations].sort((a, b) => {

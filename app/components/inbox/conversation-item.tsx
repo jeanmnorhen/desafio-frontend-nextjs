@@ -1,7 +1,8 @@
-import { type Conversation } from "@/lib/api";
+import { type Conversation, getMessages } from "@/lib/api";
 import { Avatar } from "@/app/components/ui/avatar";
 import { Badge } from "@/app/components/ui/badge";
 import { formatRelativeTime, cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -10,9 +11,21 @@ interface ConversationItemProps {
 }
 
 export function ConversationItem({ conversation, isActive, onClick }: ConversationItemProps) {
+  const queryClient = useQueryClient();
+
+  const handleMouseEnter = () => {
+    // Prefetch das mensagens dessa conversa
+    queryClient.prefetchQuery({
+      queryKey: ["conversations", conversation.id, "messages"],
+      queryFn: () => getMessages(conversation.id),
+      staleTime: 3000,
+    });
+  };
+
   return (
     <button
       onClick={onClick}
+      onMouseEnter={handleMouseEnter}
       className={cn(
         "flex w-full items-center gap-3 border-b border-border p-3 text-left transition-colors hover:bg-hover focus:bg-hover focus:outline-none",
         isActive && "bg-active"

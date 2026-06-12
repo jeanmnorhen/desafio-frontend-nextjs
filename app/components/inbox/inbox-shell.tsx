@@ -1,12 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConversationList } from "./conversation-list";
 import { ChatPanel } from "@/app/components/chat/chat-panel";
 import { cn } from "@/lib/utils";
 
 export function InboxShell() {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+
+  // Fecha o chat ativo quando pressionar Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedConversationId(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-bg-app">

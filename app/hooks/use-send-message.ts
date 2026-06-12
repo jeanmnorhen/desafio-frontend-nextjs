@@ -1,20 +1,24 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { sendMessage, type Message } from "@/lib/api";
+import { type Message } from "@/lib/api";
 
 export function useSendMessage() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationKey: ["sendMessage"],
-    mutationFn: ({ conversationId, text }: { conversationId: string; text: string }) =>
-      sendMessage(conversationId, text),
-    
-    // Optimistic Update
+    // NÃO definimos mutationFn aqui propositalmente!
+    // O mutationFn vem do setMutationDefaults no providers.tsx,
+    // que inclui cancelQueries para evitar race conditions.
+    // Se definirmos aqui, o React Query v5 usa ESTE em vez do default,
+    // e perdemos a proteção de cancelQueries.
+
+    // Optimistic Update — roda apenas na primeira chamada (não roda no resume)
     onMutate: async ({ conversationId, text }) => {
       const queryKey = ["conversations", conversationId, "messages"];
 
       // Cancel any outgoing refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({ queryKey });
+      await queryClient.cancelQueries({ queryKey: ["conversations"] });
 
       // Snapshot the previous value
       const previousMessages = queryClient.getQueryData<Message[]>(queryKey);
@@ -35,8 +39,7 @@ export function useSendMessage() {
       });
 
       // Update the lastMessage in the conversation list optimistically
-      const convsKey = ["conversations"];
-      queryClient.setQueryData<any[]>(convsKey, (old) => {
+      queryClient.setQueryData<any[]>(["conversations"], (old) => {
         if (!old) return old;
         return old.map(conv => {
           if (conv.id === conversationId) {
@@ -50,48 +53,21 @@ export function useSendMessage() {
         });
       });
 
-      // Return a context with the previous data and tempId
-      return { previousMessages, tempId, queryKey, convsKey };
+      // Return a context with the previous data
+      return { previousMessages, tempId, queryKey };
     },
 
-    // If the mutation fails, we need to revert.
-    // Notice we use variables to construct the queryKey in case context is lost (after reload)
-    onError: (err, newTodo, context) => {
-      const queryKey = ["conversations", newTodo.conversationId, "messages"];
+    // Se a mutação falhar, reverter ao snapshot
+    onError: (err, variables, context) => {
+      const queryKey = ["conversations", variables.conversationId, "messages"];
       if (context?.previousMessages) {
         queryClient.setQueryData(queryKey, context.previousMessages);
       }
     },
 
-    onSuccess: (newMessage, variables) => {
-      const queryKey = ["conversations", variables.conversationId, "messages"];
-      queryClient.setQueryData<Message[]>(queryKey, (old) => {
-        if (!old) return [newMessage];
-        const hasTemp = old.some(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body);
-        if (hasTemp) {
-          return old.map(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body ? newMessage : msg);
-        }
-        if (old.some(msg => msg.id === newMessage.id)) return old;
-        return [...old, newMessage];
-      });
-
-      // Atualiza também a lista de conversas
-      queryClient.setQueryData<any[]>(["conversations"], (old) => {
-        if (!old) return old;
-        return old.map((conv) => {
-          if (conv.id === variables.conversationId) {
-            return {
-              ...conv,
-              lastMessage: newMessage.body,
-              lastMessageAt: newMessage.createdAt,
-              unread: 0,
-            };
-          }
-          return conv;
-        }).sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
-      });
-    },
-    // Removido onSettled com invalidateQueries para evitar race condition de
-    // Eventual Consistency no backend hospedado ou cache de navegador agressivo.
+    // NÃO definimos onSuccess nem onSettled aqui!
+    // Ambos vêm do setMutationDefaults no providers.tsx.
+    // onSuccess: atualiza o cache com a mensagem real do servidor
+    // onSettled: invalida as queries com delay de 5s (Eventual Consistency)
   });
 }

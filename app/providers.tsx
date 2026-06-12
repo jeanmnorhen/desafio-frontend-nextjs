@@ -69,13 +69,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
       },
       onSettled: (data, error, variables) => {
         if (!variables) return;
-        // Aguarda 3 segundos para o servidor processar (Eventual Consistency)
+        // Aguarda 4 segundos para o servidor processar (Eventual Consistency)
         // antes de buscar a lista atualizada do backend.
-        // Isso garante que a mensagem já esteja disponível no GET.
+        // O polling está pausado por 5s (cooldown nos hooks), então esta
+        // invalidação é a ÚNICA fonte de GET nesse período — garantindo
+        // que o servidor já consolidou a mensagem.
         setTimeout(() => {
           queryClient.invalidateQueries({ queryKey: ["conversations", variables.conversationId, "messages"] });
           queryClient.invalidateQueries({ queryKey: ["conversations"] });
-        }, 3000);
+        }, 4000);
       },
     });
 

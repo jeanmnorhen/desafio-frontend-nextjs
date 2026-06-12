@@ -74,12 +74,24 @@ export function useSendMessage() {
         if (old.some(msg => msg.id === newMessage.id)) return old;
         return [...old, newMessage];
       });
-    },
 
-    // Always refetch after error or success to ensure server sync
-    onSettled: (data, error, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["conversations", variables.conversationId, "messages"] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      // Atualiza também a lista de conversas
+      queryClient.setQueryData<any[]>(["conversations"], (old) => {
+        if (!old) return old;
+        return old.map((conv) => {
+          if (conv.id === variables.conversationId) {
+            return {
+              ...conv,
+              lastMessage: newMessage.body,
+              lastMessageAt: newMessage.createdAt,
+              unread: 0,
+            };
+          }
+          return conv;
+        }).sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+      });
     },
+    // Removido onSettled com invalidateQueries para evitar race condition de
+    // Eventual Consistency no backend hospedado ou cache de navegador agressivo.
   });
 }

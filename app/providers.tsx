@@ -23,34 +23,46 @@ export function Providers({ children }: { children: React.ReactNode }) {
     // recarregue a página offline, as mutações pendentes consigam
     // ser retomadas assim que a rede voltar.
     queryClient.setMutationDefaults(["sendMessage"], {
-      mutationFn: ({ conversationId, text }: { conversationId: string; text: string }) =>
-        sendMessage(conversationId, text),
-      onSuccess: (newMessage, variables) => {
-        // Atualiza o cache diretamente para evitar race conditions com refetch.
-        if (variables) {
-          const queryKey = ["conversations", variables.conversationId, "messages"];
-          queryClient.setQueryData<any[]>(queryKey, (old) => {
-            if (!old) return [newMessage];
-            const hasTemp = old.some(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body);
-            if (hasTemp) {
-              return old.map(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body ? newMessage : msg);
-            }
-            // Se a temp não for encontrada (ex: sobrescrita por refetch), adicionamos a nova ao final
-            // Verificamos se a mensagem já não existe para não duplicar
-            if (old.some(msg => msg.id === newMessage.id)) return old;
-            return [...old, newMessage];
-          });
-        }
+      mutationFn: async ({ conversationId, text }: { conversationId: string; text: string }) => {
+        // Cancel in-flight queries (like refetchOnReconnect) to prevent race conditions
+        // where a stale GET overwrites our optimistic or fresh mutation cache.
+        await queryClient.cancelQueries({ queryKey: ["conversations", conversationId, "messages"] });
+        await queryClient.cancelQueries({ queryKey: ["conversations"] });
+        return sendMessage(conversationId, text);
       },
-      onSettled: (data, error, variables) => {
-        // Quando a mutação for concluída (com sucesso ou erro), invalidamos
-        // as queries para que a UI busque o estado real do servidor.
-        // Usamos variables em vez de context porque context é perdido no reload offline.
-        if (variables) {
-          queryClient.invalidateQueries({ queryKey: ["conversations", variables.conversationId, "messages"] });
-          queryClient.invalidateQueries({ queryKey: ["conversations"] });
-        }
-      }
+      onSuccess: (newMessage, variables) => {
+        if (!variables) return;
+        
+        // 1. Atualizar cache de mensagens
+        const msgKey = ["conversations", variables.conversationId, "messages"];
+        queryClient.setQueryData<any[]>(msgKey, (old) => {
+          if (!old) return [newMessage];
+          const hasTemp = old.some(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body);
+          if (hasTemp) {
+            return old.map(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body ? newMessage : msg);
+          }
+          if (old.some(msg => msg.id === newMessage.id)) return old;
+          return [...old, newMessage];
+        });
+
+        // 2. Atualizar cache da lista de conversas
+        queryClient.setQueryData<any[]>(["conversations"], (old) => {
+          if (!old) return old;
+          return old.map((conv) => {
+            if (conv.id === variables.conversationId) {
+              return {
+                ...conv,
+                lastMessage: newMessage.body,
+                lastMessageAt: newMessage.createdAt,
+                unread: 0,
+              };
+            }
+            return conv;
+          }).sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+        });
+      },
+      // Removemos onSettled com invalidateQueries para evitar que Eventual Consistency 
+      // ou Browser Cache agressivo sobrescreva nosso cache recém-atualizado com dados velhos.
     });
 
     return queryClient;

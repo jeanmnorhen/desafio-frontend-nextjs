@@ -5,6 +5,7 @@ export function useSendMessage() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationKey: ["sendMessage"],
     mutationFn: ({ conversationId, text }: { conversationId: string; text: string }) =>
       sendMessage(conversationId, text),
     

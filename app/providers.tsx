@@ -13,7 +13,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
         queries: {
           staleTime: 5_000,
           gcTime: 1000 * 60 * 60 * 24, // 24 hours
-          refetchOnWindowFocus: true, // Importante para chat
+          refetchOnWindowFocus: true,
+          // CRÍTICO: Desabilitamos o refetch automático ao reconectar.
+          // Quando a rede volta, o React Query dispararia GETs simultâneos
+          // ao replay da mutação pausada. Como o GET termina antes do POST,
+          // a lista antiga sobrescreveria nossa mensagem otimista.
+          // Invalidações são feitas manualmente após o onSuccess.
+          refetchOnReconnect: false,
           retry: 2,
         },
       },
@@ -61,8 +67,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
           }).sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
         });
       },
-      // Removemos onSettled com invalidateQueries para evitar que Eventual Consistency 
-      // ou Browser Cache agressivo sobrescreva nosso cache recém-atualizado com dados velhos.
+      onSettled: (data, error, variables) => {
+        if (!variables) return;
+        // Aguarda 3 segundos para o servidor processar (Eventual Consistency)
+        // antes de buscar a lista atualizada do backend.
+        // Isso garante que a mensagem já esteja disponível no GET.
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["conversations", variables.conversationId, "messages"] });
+          queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        }, 3000);
+      },
     });
 
     return queryClient;
@@ -75,6 +89,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       client={client}
       persistOptions={{
         persister,
+        maxAge: 1000 * 60 * 60 * 24, // 24 hours
         dehydrateOptions: {
           shouldDehydrateMutation: (mutation) => mutation.state.isPaused,
         },

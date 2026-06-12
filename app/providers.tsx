@@ -31,8 +31,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
           const queryKey = ["conversations", variables.conversationId, "messages"];
           queryClient.setQueryData<any[]>(queryKey, (old) => {
             if (!old) return [newMessage];
-            // Substitui a mensagem temporária pela real ou apenas adiciona
-            return old.map(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body ? newMessage : msg);
+            const hasTemp = old.some(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body);
+            if (hasTemp) {
+              return old.map(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body ? newMessage : msg);
+            }
+            // Se a temp não for encontrada (ex: sobrescrita por refetch), adicionamos a nova ao final
+            // Verificamos se a mensagem já não existe para não duplicar
+            if (old.some(msg => msg.id === newMessage.id)) return old;
+            return [...old, newMessage];
           });
         }
       },

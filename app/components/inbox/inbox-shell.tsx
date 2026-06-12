@@ -1,12 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ConversationList } from "./conversation-list";
 import { ChatPanel } from "@/app/components/chat/chat-panel";
 import { cn } from "@/lib/utils";
 
 export function InboxShell() {
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedConversationId = searchParams.get("chatId");
+
+  const setSelectedConversationId = (id: string | null) => {
+    if (id) {
+      router.push(`/?chatId=${id}`);
+    } else {
+      router.push(`/`);
+    }
+  };
 
   // Fecha o chat ativo quando pressionar Escape
   useEffect(() => {
@@ -17,7 +28,7 @@ export function InboxShell() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [router]);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-bg-app">

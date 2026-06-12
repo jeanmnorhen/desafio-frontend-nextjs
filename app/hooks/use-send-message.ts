@@ -67,7 +67,12 @@ export function useSendMessage() {
       const queryKey = ["conversations", variables.conversationId, "messages"];
       queryClient.setQueryData<Message[]>(queryKey, (old) => {
         if (!old) return [newMessage];
-        return old.map(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body ? newMessage : msg);
+        const hasTemp = old.some(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body);
+        if (hasTemp) {
+          return old.map(msg => msg.id.startsWith("temp-") && msg.body === newMessage.body ? newMessage : msg);
+        }
+        if (old.some(msg => msg.id === newMessage.id)) return old;
+        return [...old, newMessage];
       });
     },
 

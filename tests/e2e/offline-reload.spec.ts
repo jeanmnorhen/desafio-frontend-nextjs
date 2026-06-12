@@ -20,8 +20,19 @@ test.describe('Offline persistence with reload', () => {
 
     await expect(page.getByRole('log').getByText(offlineMsg)).toBeVisible();
 
-    // Reload enquanto offline! (Next.js precisa do service worker para carregar a página offline, mas o dev mode pode não ter, ou o PWA PWA não está configurado. O usuário disse "offline (PWA avançado)").
-    // Porém, vamos apenas recarregar a página. Na verdade, Playwright vai falhar se tentarmos recarregar e estiver offline sem SW.
-    // Vamos pular o reload total se o PWA não suportar documentação, mas vamos apenas simular um reload no contexto React.
+    // Reload the page while the mutation is paused in IndexedDB
+    await page.reload();
+
+    // After reload, the optimistic message should still be visible because queries are dehydrated
+    await expect(page.getByRole('log').getByText(offlineMsg)).toBeVisible();
+
+    // Fica online novamente
+    await context.setOffline(false);
+
+    // Aguarda a mutação disparar e invalidar queries
+    await page.waitForTimeout(3000);
+
+    // Mensagem deve persistir
+    await expect(page.getByRole('log').getByText(offlineMsg)).toBeVisible();
   });
 });

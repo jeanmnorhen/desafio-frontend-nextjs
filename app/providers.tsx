@@ -61,7 +61,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <PersistQueryClientProvider
       client={client}
-      persistOptions={{ persister }}
+      persistOptions={{
+        persister,
+        dehydrateOptions: {
+          shouldDehydrateMutation: (mutation) => mutation.state.isPaused,
+        },
+      }}
     >
       {children}
     </PersistQueryClientProvider>

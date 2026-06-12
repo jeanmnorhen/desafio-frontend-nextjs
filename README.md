@@ -3,11 +3,10 @@
 > **Inbox de Atendimento WhatsApp com IA** — construa a interface; o backend já está pronto.
 
 Bem-vindo(a)! Neste desafio você vai construir o **frontend** de um painel de atendimento via
-WhatsApp, parecido com o que usamos no dia a dia. **O backend já está implementado e hospedado**
-— você foca 100% na experiência, na arquitetura de componentes e nas decisões de frontend.
+WhatsApp. **O backend já está implementado e hospedado**
 
-Não buscamos pixel-perfect. Buscamos entender **como você pensa** em Next.js: o que é Server
-e o que é Client Component, como busca e sincroniza dados, como trata estados de carregamento
+
+Foco: Na arquitetura de componentes e nas decisões de frontend, Next.js: Definir bem o que é Server e o que é Client Component, como busca e sincroniza dados, como trata estados de carregamento
 e erro, e como organiza o código.
 
 ---
@@ -50,19 +49,7 @@ backend localmente (offline), veja [`server/README.md`](server/README.md).
 
 ---
 
-## 🚀 Como começar
-
-```bash
-# 1. Configure a URL da API (já vem preenchida com a URL hospedada)
-cp .env.example .env.local
-
-# 2. Instale e rode
-npm install
-npm run dev          # http://localhost:3000
-```
-
-Abra <http://localhost:3000> — a página inicial faz uma **verificação de conexão** com a API.
-Se aparecer "✓ Conectado", está tudo pronto para você construir.
+## Inicialização
 
 > O que já entregamos: projeto Next.js configurado (App Router, Tailwind, React Query, Axios),
 > `lib/api.ts` tipado e um exemplo mínimo de chamada. **As telas são por sua conta.**
@@ -91,9 +78,5 @@ Se aparecer "✓ Conectado", está tudo pronto para você construir.
 
 ## 📋 Regras
 
-- **Prazo**: 5 dias corridos.
-- **Stack obrigatória**: Next.js (App Router) + TypeScript. UI à sua escolha (Tailwind já configurado;
-  pode usar shadcn/ui, etc.).
-- Pode usar IA como assistente — mas **você precisa entender e defender cada decisão** na entrevista.
+- **Stack obrigatória**: Next.js (App Router) + TypeScript. UI Tailwind já configurado;
 
-Boa sorte! 🚀

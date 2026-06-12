@@ -4,7 +4,12 @@ import { type Message } from "@/lib/api";
 export function useSendMessage() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<
+    Message,
+    Error,
+    { conversationId: string; text: string },
+    { previousMessages: Message[] | undefined; tempId: string; queryKey: any[] }
+  >({
     mutationKey: ["sendMessage"],
     // NÃO definimos mutationFn aqui propositalmente!
     // O mutationFn vem do setMutationDefaults no providers.tsx,

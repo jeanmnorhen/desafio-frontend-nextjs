@@ -1,0 +1,32 @@
+{
+  "version": "1.60.0",
+  "viteVersion": "6.4.3",
+  "registerSourceHash": "ea233d95b980072c81eb49458aee55f5d33fdb02",
+  "components": [
+    {
+      "id": "C__Garagem_Trabalho_Desafio_desafio_frontend_nextjs_tests_ct___app_components_ui_avatar_Avatar",
+      "filename": "C:\\Garagem\\Trabalho\\Desafio\\desafio-frontend-nextjs\\tests\\ct\\avatar.spec.tsx",
+      "importSource": "@/app/components/ui/avatar",
+      "remoteName": "Avatar"
+    },
+    {
+      "id": "C__Garagem_Trabalho_Desafio_desafio_frontend_nextjs_tests_ct___app_components_ui_badge_Badge",
+      "filename": "C:\\Garagem\\Trabalho\\Desafio\\desafio-frontend-nextjs\\tests\\ct\\badge.spec.tsx",
+      "importSource": "@/app/components/ui/badge",
+      "remoteName": "Badge"
+    }
+  ],
+  "sources": {
+    "C:/Garagem/Trabalho/Desafio/desafio-frontend-nextjs/playwright/index.html": {
+      "timestamp": 1781276099230.7786
+    }
+  },
+  "deps": {
+    "C:\\Garagem\\Trabalho\\Desafio\\desafio-frontend-nextjs\\app\\components\\ui\\avatar.tsx": [
+      "C:\\Garagem\\Trabalho\\Desafio\\desafio-frontend-nextjs\\app\\components\\ui\\avatar.tsx"
+    ],
+    "C:\\Garagem\\Trabalho\\Desafio\\desafio-frontend-nextjs\\app\\components\\ui\\badge.tsx": [
+      "C:\\Garagem\\Trabalho\\Desafio\\desafio-frontend-nextjs\\app\\components\\ui\\badge.tsx"
+    ]
+  }
+}

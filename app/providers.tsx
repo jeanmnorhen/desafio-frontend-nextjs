@@ -10,7 +10,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 5_000,
-            refetchOnWindowFocus: false,
+            gcTime: 1000 * 60 * 5, // 5 minutes
+            refetchOnWindowFocus: true, // Importante para chat
+            retry: 2,
           },
         },
       }),

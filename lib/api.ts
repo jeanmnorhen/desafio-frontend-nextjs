@@ -55,16 +55,14 @@ export async function getMe(): Promise<Agent> {
 
 export async function getConversations(): Promise<Conversation[]> {
   const { data } = await api.get<Conversation[]>("/conversations", {
-    params: { _t: Date.now() },
-    headers: { "Cache-Control": "no-cache" }
+    params: { _t: Date.now() }
   });
   return data;
 }
 
 export async function getMessages(conversationId: string): Promise<Message[]> {
   const { data } = await api.get<Message[]>(`/conversations/${conversationId}/messages`, {
-    params: { _t: Date.now() },
-    headers: { "Cache-Control": "no-cache" }
+    params: { _t: Date.now() }
   });
   return data;
 }

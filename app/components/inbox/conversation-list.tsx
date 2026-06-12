@@ -53,8 +53,9 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedId, filteredConversations, onSelect]);
 
-  if (isError) {
-    return <ErrorState onRetry={() => refetch()} />;
+  // Só mostra tela de erro se não houver dados em cache (ex: primeiro carregamento offline falhou)
+  if (isError && (!conversations || conversations.length === 0)) {
+    return <ErrorState onRetry={refetch} />;
   }
 
   // Ordenar por data da última mensagem (descendente)

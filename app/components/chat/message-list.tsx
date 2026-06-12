@@ -85,10 +85,11 @@ export function MessageList({ conversationId, messages, isLoading, isError, onRe
     overscan: 10,
   });
 
-  if (isError) {
+  // Só mostra tela de erro se não houver dados em cache (ex: primeiro carregamento offline falhou)
+  if (isError && (!messages || messages.length === 0)) {
     return (
-      <div className="flex-1 bg-bg-chat">
-        <ErrorState onRetry={onRetry} message="Não foi possível carregar as mensagens." />
+      <div className="flex flex-1 items-center justify-center p-4">
+        <ErrorState onRetry={onRetry} />
       </div>
     );
   }

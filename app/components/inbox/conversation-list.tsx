@@ -16,16 +16,30 @@ interface ConversationListProps {
 
 export function ConversationList({ selectedId, onSelect }: ConversationListProps) {
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "unread">("all");
   const { data: conversations, isLoading, isError, refetch } = useConversations();
 
-  // Filtrar conversas por nome ou telefone
+  const totalCount = conversations?.length ?? 0;
+  const unreadCount = conversations?.filter(c => c.unread > 0).length ?? 0;
+
+  // Filtrar conversas por nome, telefone e status de leitura
   const filteredConversations = useMemo(() => {
-    return conversations?.filter(
-      (c) =>
-        c.contactName.toLowerCase().includes(search.toLowerCase()) ||
-        c.contactPhone.includes(search)
-    ) ?? [];
-  }, [conversations, search]);
+    let result = conversations ?? [];
+    
+    if (filter === "unread") {
+      result = result.filter(c => c.unread > 0);
+    }
+    
+    if (search) {
+      result = result.filter(
+        (c) =>
+          c.contactName.toLowerCase().includes(search.toLowerCase()) ||
+          c.contactPhone.includes(search)
+      );
+    }
+    
+    return result;
+  }, [conversations, search, filter]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -69,6 +83,31 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
     <div className="flex h-full flex-col bg-bg-sidebar pt-3">
       <ConversationSearch value={search} onChange={setSearch} />
       
+      <div className="flex gap-2 px-3 pb-3">
+        <button
+          onClick={() => setFilter("all")}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            filter === "all"
+              ? "bg-primary text-bg-app"
+              : "bg-bg-input text-text-secondary hover:bg-hover hover:text-text-primary"
+          }`}
+        >
+          Todas
+          <span className={`ml-1.5 text-xs ${filter === "all" ? "opacity-80" : "opacity-60"}`}>({totalCount})</span>
+        </button>
+        <button
+          onClick={() => setFilter("unread")}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            filter === "unread"
+              ? "bg-primary text-bg-app"
+              : "bg-bg-input text-text-secondary hover:bg-hover hover:text-text-primary"
+          }`}
+        >
+          Não lidas
+          <span className={`ml-1.5 text-xs ${filter === "unread" ? "opacity-80" : "opacity-60"}`}>({unreadCount})</span>
+        </button>
+      </div>
+
       <div className="flex-1 overflow-y-auto" role="list" aria-label="Lista de conversas">
         {isLoading ? (
           Array.from({ length: 8 }).map((_, i) => <ConversationSkeleton key={i} />)

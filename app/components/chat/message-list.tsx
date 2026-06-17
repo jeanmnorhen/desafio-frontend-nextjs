@@ -51,12 +51,14 @@ export function MessageList({ conversationId, messages, isLoading, isError, onRe
     }
   };
 
-  // Rola para a última mensagem (fim da conversa) ao carregar ou mudar de conversa
+  // Rola para a última mensagem (fim da conversa) ao carregar ou mudar de conversa.
+  // Omitimos `messages` intencionalmente: este efeito só deve disparar quando a conversa
+  // muda ou termina de carregar. Novas mensagens individuais são tratadas no efeito abaixo.
   useEffect(() => {
     if (!isLoading && messages && messages.length > 0) {
       setTimeout(scrollToBottom, 50); // delay sutil para renderização do virtualizer estabilizar
     }
-  }, [conversationId, isLoading]);
+  }, [conversationId, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Se tem nova mensagem
   useEffect(() => {

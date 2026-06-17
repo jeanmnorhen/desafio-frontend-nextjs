@@ -93,7 +93,7 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
           }`}
         >
           Todas
-          <span className={`ml-1.5 text-xs ${filter === "all" ? "opacity-80" : "opacity-60"}`}>({totalCount})</span>
+          <span suppressHydrationWarning className={`ml-1.5 text-xs ${filter === "all" ? "opacity-80" : "opacity-60"}`}>({totalCount})</span>
         </button>
         <button
           onClick={() => setFilter("unread")}
@@ -104,7 +104,7 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
           }`}
         >
           Não lidas
-          <span className={`ml-1.5 text-xs ${filter === "unread" ? "opacity-80" : "opacity-60"}`}>({unreadCount})</span>
+          <span suppressHydrationWarning className={`ml-1.5 text-xs ${filter === "unread" ? "opacity-80" : "opacity-60"}`}>({unreadCount})</span>
         </button>
       </div>
 

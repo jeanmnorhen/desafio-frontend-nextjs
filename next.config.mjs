@@ -2,7 +2,9 @@ import withSerwistInit from "@serwist/next";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configurações do Next.js
+  // idb-keyval usa IndexedDB (API de browser). Excluímos do bundle do servidor
+  // para evitar TypeError durante o prerender estático.
+  serverExternalPackages: ["idb-keyval"],
 };
 
 const withSerwist = withSerwistInit({

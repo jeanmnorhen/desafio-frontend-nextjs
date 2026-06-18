@@ -60,18 +60,26 @@ A aplicação conta com um mecanismo robusto de **Offline-First**, utilizando as
 
 ---
 
-## 🔄 Buscar e Sincronizar Dados
+## 🔄 Sincronização de Dados em Tempo Real
 
-Para garantir que a lista de contatos e as bolhas de chat permaneçam sincronizadas com as interações reais (evitando mensagens perdidas ou inconsistências com o servidor), adotamos as seguintes técnicas:
-1. **Polling Inteligente:**
-   * A lista de conversas faz polling a cada **5 segundos** (`refetchInterval: 5000` em [use-conversations.ts](/app/hooks/use-conversations.ts)).
-   * O histórico da conversa ativa faz polling a cada **3 segundos** (`refetchInterval: 3000` em [use-messages.ts](/app/hooks/use-messages.ts)).
-2. **Cooldown de Polling:**
-   * O polling é pausado automaticamente durante mutações de envio de mensagem e mantido sob cooldown por **5 segundos** após o término da mutação. Isso evita que requisições HTTP GET paralelas tragam dados desatualizados do backend (devido à eventual consistência) e apaguem mensagens otimistas da tela.
-3. **Invalidação Atrasada:**
-   * No `onSettled` em [providers.tsx](/app/providers.tsx), aguardamos **4 segundos** antes de invalidar as queries para forçar o refetch com dados já consolidados no servidor.
-4. **Prefetching no Hover:**
-   * Ao passar o mouse (`onMouseEnter`) sobre um item na lista de contatos, o React Query inicia silenciosamente o pré-carregamento das mensagens daquela conversa. Quando o usuário clica de fato, o chat carrega instantaneamente.
+Para garantir que a lista de contatos e as bolhas de chat permaneçam sincronizadas em tempo real, adotamos as seguintes técnicas:
+
+1. **WebSocket (Pusher) como Fonte Primária:**
+   * Os hooks `useConversations` e `useMessages` se inscrevem no canal `conversas` do Pusher e escutam eventos `message:new`, `conversation:updated` e `message:new-{conversationId}`.
+   * Ao receber um evento, o cache do React Query é atualizado diretamente via `queryClient.setQueryData()`, sem necessidade de refetch HTTP.
+   * A inscrição no Pusher é limpa automaticamente ao desmontar o componente (gerenciamento de ref count).
+
+2. **Prefetching Antecipado:**
+   * Ao carregar a lista de conversas ([conversation-list.tsx](/app/components/inbox/conversation-list.tsx)), as **3 primeiras conversas** têm suas mensagens pré-carregadas silenciosamente via `queryClient.prefetchInfiniteQuery()` com `staleTime` de 30s.
+   * Isso garante que, ao clicar em uma dessas conversas, o histórico apareça instantaneamente.
+
+3. **Persistência Local (IndexedDB):**
+   * O cache completo de queries e mutações é persistido no IndexedDB via `@tanstack/react-query-persist-client` + `idb-keyval` com TTL de 24 horas.
+   * Mutações pausadas (offline) são desidratadas e reidratadas automaticamente — quando a conexão é restabelecida, a fila é processada em background.
+
+4. **Stale Time Configurável:**
+   * Queries comuns têm `staleTime: 5s` para evitar refetches desnecessários.
+   * Dados do agente (`useAgent`) usam `staleTime: Infinity` por raramente mudarem.
 
 ---
 
@@ -151,7 +159,41 @@ npx playwright test
 
 ---
 
-### Resumo da Cobertura
+## ⏳ O Que Faria Diferente com Mais Tempo
+
+### 1. Adicionar Fallback de Polling para o Pusher
+Atualmente a sincronização em tempo real depende exclusivamente do Pusher via WebSocket. Se a conexão do Pusher falhar (proxy corporativo, rede restritiva), o usuário só recebe atualizações ao recarregar a página. Adicionaria **polling como fallback automático** com `refetchInterval` (ex.: 15s) ativado apenas quando o Pusher estiver desconectado, garantindo resiliência sem sobrecarregar a rede no caso normal.
+
+### 2. Cobertura de Testes mais Ampla
+- **Testes unitários para hooks:** Os hooks `useConversations`, `useMessages`, `useSendMessage` e `useAiSuggest` contêm lógica crítica (mutations, optimistic updates, rollback) que não está coberta por testes automatizados.
+- **Testes de componentes para chat/**: Componentes como `ChatPanel`, `MessageList`, `MessageInput` e `MessageBubble` não possuem testes de componente (apenas os de UI genérica como `Avatar` e `Badge`).
+- **Testes de acessibilidade:** Adicionaria verificações automáticas de a11y com `@axe-core/playwright` nos testes E2E.
+
+### 3. Melhorias na Experiência Mobile
+- **Gestos nativos:** Implementaria gestos de *swipe* para voltar à lista de conversas (substituindo o clique no botão "voltar") e *pull-to-refresh* para recarregar mensagens.
+- **Modo offline mais visível:** Adicionaria um banner ou badge persistente indicando o estado offline, em vez de depender apenas do ícone de relógio nas mensagens.
+
+### 4. Indicadores de Digitação (Typing Indicators)
+Com suporte do backend, implementaria a exibição em tempo real de quando o contato ou o agente estão digitando, usando o Pusher para propagar o evento de "typing start/stop".
+
+### 5. Component Documentation com Storybook
+Adicionaria **Storybook** para documentar e testar visualmente todos os componentes de UI isoladamente, facilitando o desenvolvimento e a revisão de design.
+
+### 6. Internacionalização (i18n)
+Implementaria suporte a múltiplos idiomas (inglês, espanhol) usando `next-intl` ou similar, tornando o produto acessível para mercados internacionais.
+
+### 7. Performance Monitoring e Analytics
+Integraria ferramentas como **Vercel Analytics**, **Sentry** para rastreamento de erros em produção e **Web Vitals** para monitorar performance real do usuário.
+
+### 8. Notificações Push
+Expandiria o PWA com notificações push reais para alertar o agente sobre novas mensagens mesmo com o app fechado, usando a API Push + Service Worker.
+
+### 9. Criptografia de Ponta a Ponta
+Para um produto real de atendimento, adicionaria criptografia no cliente (antes do envio) para garantir que mensagens sensíveis não trafeguem em texto puro.
+
+---
+
+### Resumo da Cobertura de Testes
 
 | Camada | Ferramenta | Escopo | Velocidade |
 |---|---|---|---|

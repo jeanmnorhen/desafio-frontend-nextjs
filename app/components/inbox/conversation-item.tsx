@@ -16,15 +16,23 @@ export function ConversationItem({ conversation, isActive, onClick }: Conversati
   const queryClient = useQueryClient();
 
   const handleMouseEnter = () => {
-    queryClient.prefetchQuery({
-      queryKey: ["conversations", conversation.id, "messages-full"],
-      queryFn: async () => {
+    queryClient.prefetchInfiniteQuery({
+      queryKey: ["conversations", conversation.id, "messages"],
+      queryFn: async ({ pageParam = 0 }) => {
         const result = await getMessages(conversation.id);
-        const msgs = Array.isArray(result) ? result : [];
-        return msgs.sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
+        const all = Array.isArray(result) ? result : [];
+        all.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        const PAGE_SIZE = 20;
+        const total = all.length;
+        const start = Math.max(0, total - (pageParam + 1) * PAGE_SIZE);
+        const end = Math.max(0, total - pageParam * PAGE_SIZE);
+        return {
+          messages: all.slice(start, end),
+          nextPage: start > 0 ? pageParam + 1 : undefined,
+        };
       },
+      initialPageParam: 0,
+      getNextPageParam: (lastPage: any) => lastPage?.nextPage,
       staleTime: 30000,
     });
   };

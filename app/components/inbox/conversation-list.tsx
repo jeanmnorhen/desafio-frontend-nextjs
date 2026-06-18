@@ -31,15 +31,22 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
   useEffect(() => {
     if (!conversations || conversations.length === 0) return;
     for (const conv of conversations.slice(0, 3)) {
-      queryClient.prefetchQuery({
-        queryKey: ["conversations", conv.id, "messages-full"],
-        queryFn: async () => {
+      queryClient.prefetchInfiniteQuery({
+        queryKey: ["conversations", conv.id, "messages"],
+        queryFn: async ({ pageParam = 0 }) => {
           const result = await getMessages(conv.id);
-          const msgs = Array.isArray(result) ? result : [];
-          return msgs.sort(
-            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          );
+          const all = Array.isArray(result) ? result : [];
+          all.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          const total = all.length;
+          const start = Math.max(0, total - (pageParam + 1) * 20);
+          const end = Math.max(0, total - pageParam * 20);
+          return {
+            messages: all.slice(start, end),
+            nextPage: start > 0 ? pageParam + 1 : undefined,
+          };
         },
+        initialPageParam: 0,
+        getNextPageParam: (lastPage: any) => lastPage?.nextPage,
         staleTime: 30000,
       });
     }

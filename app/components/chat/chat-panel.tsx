@@ -24,7 +24,10 @@ export function ChatPanel({ conversationId, onBack }: ChatPanelProps) {
     data: messages, 
     isLoading, 
     isError, 
-    refetch 
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useMessages(conversationId);
 
   if (!conversationId) {
@@ -54,6 +57,9 @@ export function ChatPanel({ conversationId, onBack }: ChatPanelProps) {
           isLoading={isLoading} 
           isError={isError} 
           onRetry={() => refetch()} 
+          fetchNextPage={fetchNextPage}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
         />
       </div>
       

@@ -17,6 +17,9 @@ test.describe("Offline persistence with reload", () => {
     // Go offline
     await page.context().setOffline(true);
 
+    // Aguarda o React Query processar o evento offline antes de disparar a mutação
+    await page.waitForFunction(() => !navigator.onLine);
+
     // Send message while offline
     await chatInput.press("Enter");
 

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type Message } from "@/lib/api";
+import { updateMessageInInfiniteCache } from "@/lib/utils";
 
 export function useSendMessage() {
   const queryClient = useQueryClient();
@@ -8,14 +9,12 @@ export function useSendMessage() {
     Message,
     Error,
     { conversationId: string; text: string },
-    { previousMessages: Message[] | undefined; tempId: string; queryKey: any[] }
+    { previousMessages: any; tempId: string; queryKey: any[] }
   >({
     mutationKey: ["sendMessage"],
     // NÃO definimos mutationFn aqui propositalmente!
     // O mutationFn vem do setMutationDefaults no providers.tsx,
     // que inclui cancelQueries para evitar race conditions.
-    // Se definirmos aqui, o React Query v5 usa ESTE em vez do default,
-    // e perdemos a proteção de cancelQueries.
 
     // Optimistic Update — roda apenas na primeira chamada (não roda no resume)
     onMutate: async ({ conversationId, text }) => {
@@ -26,7 +25,7 @@ export function useSendMessage() {
       await queryClient.cancelQueries({ queryKey: ["conversations"] });
 
       // Snapshot the previous value
-      const previousMessages = queryClient.getQueryData<Message[]>(queryKey);
+      const previousMessages = queryClient.getQueryData(queryKey);
 
       // Optimistically update to the new value
       const tempId = `temp-${Date.now()}`;
@@ -38,9 +37,8 @@ export function useSendMessage() {
         createdAt: new Date().toISOString(),
       };
 
-      queryClient.setQueryData<Message[]>(queryKey, (old) => {
-        if (!old) return [optimisticMessage];
-        return [...old, optimisticMessage];
+      queryClient.setQueryData(queryKey, (old) => {
+        return updateMessageInInfiniteCache(old, optimisticMessage);
       });
 
       // Update the lastMessage in the conversation list optimistically
@@ -69,10 +67,5 @@ export function useSendMessage() {
         queryClient.setQueryData(queryKey, context.previousMessages);
       }
     },
-
-    // NÃO definimos onSuccess nem onSettled aqui!
-    // Ambos vêm do setMutationDefaults no providers.tsx.
-    // onSuccess: atualiza o cache com a mensagem real do servidor
-    // onSettled: invalida as queries com delay de 5s (Eventual Consistency)
   });
 }

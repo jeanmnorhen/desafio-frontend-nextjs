@@ -60,3 +60,42 @@ export function formatPhoneNumber(phone: string): string {
   }
   return phone;
 }
+
+export function updateMessageInInfiniteCache(oldData: any, newMessage: any, tempBodyToReplace?: string) {
+  if (!oldData) {
+    return {
+      pages: [{ messages: [newMessage], nextPage: undefined }],
+      pageParams: [0],
+    };
+  }
+
+  if (Array.isArray(oldData)) {
+    const filtered = oldData.filter((m: any) => {
+      if (m.id === newMessage.id) return false;
+      if (tempBodyToReplace && m.id.startsWith("temp-") && m.body === tempBodyToReplace) return false;
+      return true;
+    });
+    return [...filtered, newMessage];
+  }
+
+  const newPages = [...(oldData.pages || [])];
+
+  if (newPages.length > 0) {
+    newPages[0] = {
+      ...newPages[0],
+      messages: [
+        ...newPages[0].messages.filter((m: any) => {
+          if (m.id === newMessage.id) return false;
+          if (tempBodyToReplace && m.id.startsWith("temp-") && m.body === tempBodyToReplace) return false;
+          return true;
+        }),
+        newMessage,
+      ],
+    };
+  } else {
+    newPages.push({ messages: [newMessage], nextPage: undefined });
+  }
+
+  return { ...oldData, pages: newPages };
+}
+

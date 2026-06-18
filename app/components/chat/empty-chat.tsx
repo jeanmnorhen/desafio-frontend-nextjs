@@ -14,11 +14,7 @@ export function EmptyChat() {
         Este painel permite que você responda aos clientes com a ajuda de 
         sugestões inteligentes da nossa IA.
       </p>
-      
-      {/* Decorative WhatsApp-like encryption message at bottom */}
-      <div className="absolute bottom-10 flex items-center gap-2 rounded-full bg-hover/50 px-4 py-2 text-xs text-text-muted">
-        Suas mensagens pessoais são protegidas com criptografia de ponta a ponta.
-      </div>
+
     </div>
   );
 }

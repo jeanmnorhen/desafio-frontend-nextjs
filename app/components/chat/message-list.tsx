@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowDown, MessageSquareOff } from "lucide-react";
+import { ArrowDown, MessageSquareOff, Loader2 } from "lucide-react";
 import { type Message } from "@/lib/api";
 import { MessageBubble } from "./message-bubble";
 import { MessageSkeleton } from "@/app/components/ui/skeleton";
@@ -18,9 +18,21 @@ interface MessageListProps {
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
+  fetchNextPage: () => void;
+  hasNextPage: boolean | undefined;
+  isFetchingNextPage: boolean;
 }
 
-export function MessageList({ conversationId, messages, isLoading, isError, onRetry }: MessageListProps) {
+export function MessageList({
+  conversationId,
+  messages,
+  isLoading,
+  isError,
+  onRetry,
+  fetchNextPage,
+  hasNextPage,
+  isFetchingNextPage,
+}: MessageListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const prevMessagesLength = useRef(messages?.length || 0);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
@@ -34,7 +46,25 @@ export function MessageList({ conversationId, messages, isLoading, isError, onRe
     const isScrolledUp = target.scrollHeight - target.scrollTop - target.clientHeight > 100;
     setShowScrollBottom(isScrolledUp);
     setIsAutoScrolling(!isScrolledUp);
+
+    // Se rolar para o topo (scrollTop perto de 0), busca a próxima página
+    if (target.scrollTop < 30 && hasNextPage && !isFetchingNextPage) {
+      // Salva a altura atual do scroll para ajustar após o carregamento das novas mensagens
+      const prevScrollHeight = target.scrollHeight;
+      const prevScrollTop = target.scrollTop;
+
+      fetchNextPage();
+
+      // Ajusta a rolagem para manter a posição visual
+      requestAnimationFrame(() => {
+        if (parentRef.current) {
+          const newScrollHeight = parentRef.current.scrollHeight;
+          parentRef.current.scrollTop = prevScrollTop + (newScrollHeight - prevScrollHeight);
+        }
+      });
+    }
   };
+
 
   // Rolar para baixo forçado
   const scrollToBottom = () => {
@@ -127,10 +157,15 @@ export function MessageList({ conversationId, messages, isLoading, isError, onRe
       <div
         ref={parentRef}
         onScroll={handleScroll}
-        className="relative z-10 h-full w-full overflow-y-auto px-4 sm:px-6"
+        className="relative z-10 h-full w-full overflow-y-auto px-4 sm:px-6 py-2"
         role="log"
         aria-live="polite"
       >
+        {isFetchingNextPage && (
+          <div className="flex items-center justify-center py-3">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        )}
         <div
           style={{
             height: `${rowVirtualizer.getTotalSize()}px`,

@@ -1,3 +1,5 @@
+"use client";
+
 import { ArrowLeft } from "lucide-react";
 import { Avatar } from "@/app/components/ui/avatar";
 import { type Conversation } from "@/lib/api";

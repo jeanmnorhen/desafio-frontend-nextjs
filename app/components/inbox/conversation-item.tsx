@@ -1,3 +1,5 @@
+"use client";
+
 import { type Conversation, getMessages } from "@/lib/api";
 import { Avatar } from "@/app/components/ui/avatar";
 import { Badge } from "@/app/components/ui/badge";
@@ -14,11 +16,16 @@ export function ConversationItem({ conversation, isActive, onClick }: Conversati
   const queryClient = useQueryClient();
 
   const handleMouseEnter = () => {
-    // Prefetch das mensagens dessa conversa
     queryClient.prefetchQuery({
-      queryKey: ["conversations", conversation.id, "messages"],
-      queryFn: () => getMessages(conversation.id),
-      staleTime: 3000,
+      queryKey: ["conversations", conversation.id, "messages-full"],
+      queryFn: async () => {
+        const result = await getMessages(conversation.id);
+        const msgs = Array.isArray(result) ? result : [];
+        return msgs.sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      },
+      staleTime: 30000,
     });
   };
 

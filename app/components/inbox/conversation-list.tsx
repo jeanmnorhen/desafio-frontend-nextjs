@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getMessages } from "@/lib/api";
 import { MessageSquareOff } from "lucide-react";
 import { useConversations } from "@/app/hooks/use-conversations";
 import { ConversationSearch } from "./conversation-search";
@@ -18,6 +20,30 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const { data: conversations, isLoading, isError, refetch } = useConversations();
+  const queryClient = useQueryClient();
+
+  // SSR não tem auth → dados vazios. No cliente, IndexedDB restaura o cache.
+  // Esse guard faz server e client renderizarem skeleton na hidratação.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
+
+  // Pré-carrega mensagens das primeiras conversas para acelerar o clique
+  useEffect(() => {
+    if (!conversations || conversations.length === 0) return;
+    for (const conv of conversations.slice(0, 3)) {
+      queryClient.prefetchQuery({
+        queryKey: ["conversations", conv.id, "messages-full"],
+        queryFn: async () => {
+          const result = await getMessages(conv.id);
+          const msgs = Array.isArray(result) ? result : [];
+          return msgs.sort(
+            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        },
+        staleTime: 30000,
+      });
+    }
+  }, [conversations, queryClient]);
 
   const totalCount = conversations?.length ?? 0;
   const unreadCount = conversations?.filter(c => c.unread > 0).length ?? 0;
@@ -109,7 +135,7 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
       </div>
 
       <div className="flex-1 overflow-y-auto" role="list" aria-label="Lista de conversas">
-        {isLoading ? (
+        {!hydrated || isLoading ? (
           Array.from({ length: 8 }).map((_, i) => <ConversationSkeleton key={i} />)
         ) : sortedConversations.length === 0 ? (
           <EmptyState
